@@ -1,6 +1,7 @@
 import os
 from graphiti_core import Graphiti
-from graphiti_core.llm_client.gemini_client import GeminiClient, LLMConfig
+from graphiti_core.llm_client.gemini_client import GeminiClient
+from graphiti_core.llm_client.config import LLMConfig
 from graphiti_core.embedder.gemini import GeminiEmbedder, GeminiEmbedderConfig
 import asyncio
 import json
@@ -17,15 +18,15 @@ import episodes
 load_dotenv()
 
 # Google API key configuration
-api_key = os.environ.get("GOOGLE_API_KEY")
+api_key = os.environ.get("GOOGLE_API_KEY", None)
 api_version = "2025-05-17"
 endpoint = "https://graphiti-akzuza.openai.azure.com/"
 if not api_key:
     raise ValueError("API_KEY environment variable must be set")
 
-neo4jUri = os.environ.get("NEO4J_URI")
-neo4jUserName = os.environ.get("NEO4J_USERNAME")
-neo4jPassword = os.environ.get("NEO4J_PASSWORD")
+neo4jUri = os.environ.get("NEO4J_URI", "neo4j://localhost")
+neo4jUserName = os.environ.get("NEO4J_USERNAME", "neo4j")
+neo4jPassword = os.environ.get("NEO4J_PASSWORD", "password")
 
 logging.basicConfig(
     level=INFO,
@@ -63,7 +64,7 @@ async def main():
     # Initial episode
     for i, episode in enumerate(episodes.account_episodes):
         await graphiti.add_episode(
-            name = 'Bank',
+            name = f'Episode {i}',
             episode_body=episode['content']
             if isinstance(episode['content'], str)
             else json.dumps(episode['content']),
