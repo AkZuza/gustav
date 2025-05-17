@@ -1,0 +1,6 @@
+neo4j
+graphiti-core
+graphiti-core[google-genai]
+openai
+ipykernel
+google
