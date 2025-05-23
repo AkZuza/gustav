@@ -9,7 +9,7 @@ import UserMessage from "./views/UserMessage"
 import SystemMessage from "./views/SystemMessage"
 import OpenAI from "openai"
 import "./util/neo4j_functions"
-import {createAccountFunction, createUserFunction, createUser, createAccount} from "./util/neo4j_functions"
+import {createAccountFunction, createUserFunction, handleFunction} from "./util/neo4j_functions"
 import type { ChatCompletionTool } from "openai/resources.mjs"
 
 // Structure for chat texts
@@ -18,7 +18,7 @@ var responses: string[] = []
 
 // Initialize OpenAI stuff here
 const client = new OpenAI({
-	baseURL: "http://172.17.12.26:2345/v1",
+	baseURL: "http://192.168.255.76:2345/v1",
 	apiKey: "lm-studio"
 })
 
@@ -39,16 +39,23 @@ const generateReponse = async (prompt: string) => {
 		tools: tools
 	})
 
-	const response = completion.choices[0]?.message.content
+	let response = completion.choices[0]?.message.content ?? ""
 	console.log('Response from LLM\n' + response + '\n')
 	const tool_calls: any = completion.choices[0]!.message.tool_calls
 	console.log(`Tools called:\n`)
 	console.log(tool_calls)
-	if (response != undefined) responses.push(response!)
 
-	for (const tool_call in tool_calls) {
-		const args = JSON.parse()	
+	for (let i = 0; i < tool_calls.length; ++i) {
+		const tool_call = tool_calls[i]
+		const args = JSON.parse(tool_call.function.arguments)
+		const functionName = tool_call.function.name
+		
+		console.log(`Function call: ${functionName}`)
+		console.log(args)
+		handleFunction(functionName, args)
+		response += `\ntool: ${functionName} args: (${args})`
 	}
+	responses.push(response)
 }
 
 // Type Definition for Prompt Form payload

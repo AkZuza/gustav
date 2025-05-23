@@ -20,7 +20,7 @@ const createUser = async (name: string, email: string, age: number) => {
 
 	try {
 		const result = await session.executeWrite(async tx => {
-			const result = await tx.run("CREATE (p:Person {name: $name, email: $email, age: $age}) RETURN p.name", {
+			const result = await tx.run("CREATE (p:User {name: $name, email: $email, age: $age}) RETURN p.name", {
 				name: name, email: email, age: age
 			})
 
@@ -66,9 +66,9 @@ const createAccount = async (name: string, balance: number) => {
 	const session = driver.session()
 	try {
 		await session.executeWrite(async tx => {
-			const result = await tx.run(`MATCH (u:User) WHERE u.name = $name 
-			CREATE (a:Account {account_id: $account_id, balance: $balance})
-			CREATE (a)-[r:OPENED_BY]->(u) RETURN a.account_id`, {
+			const result = await tx.run(`MATCH (u:User) WHERE u.name = "$name" 
+			CREATE (a:Account {account_id: $account_id, balance: $balance})<-[r:OPENED_BY]-(u)
+		    RETURN a.account_id`, {
 					name: name,
 					balance: balance,
 					account_id: randomInt(0, 10000)
@@ -108,11 +108,22 @@ const createAccountFunction = {
 	}
 }
 
+const handleFunction = (tool_name: string, args: any) => {
+	switch(tool_name) {
+		case "createUser": 
+			createUser(args.name, args.email, args.age)
+			break
+
+		case "createAccount":
+			createAccount(args.name, args.balance)
+			break
+	}
+}
+
 export {
+	handleFunction,
 	createUser, createUserFunction,
 	createAccount, createAccountFunction
 }
-
-
 
 
