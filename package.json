@@ -1,0 +1,29 @@
+{
+	"name": "gustav",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@elysiajs/html": "^1.3.0",
+		"@elysiajs/static": "^1.3.0",
+		"@tailwindcss/cli": "^4.1.7",
+		"conc": "^0.0.3",
+		"concurrent": "^0.3.2",
+		"elysia": "^1.3.1",
+		"neo4j-driver": "^5.28.1",
+		"openai": "^4.102.0",
+		"tailwind": "^4.0.0"
+	},
+	"scripts": {
+		"tw:dev": "bunx @tailwindcss/cli -i ./src/static/css/input.css -o ./src/static/css/style.css --watch",
+		"tw": "bunx @tailwindcss/cli -i ./src/static/css/input.css -o ./src/static/css/style.css",
+		"index:dev": "bun run --watch ./src/index.tsx",
+		"index": "bun run ./src/index.tsx"
+	}
+}

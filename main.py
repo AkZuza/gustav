@@ -1,19 +1,20 @@
 import os
 from graphiti_core import Graphiti
+import graphiti_core
 from graphiti_core.llm_client.gemini_client import GeminiClient
 from graphiti_core.llm_client.config import LLMConfig
 from graphiti_core.embedder.gemini import GeminiEmbedder, GeminiEmbedderConfig
 import asyncio
 import json
+from graphiti_core.utils.bulk_utils import RawEpisode
 import logging
 import os
 from datetime import datetime, timezone
 from logging import INFO
 from dotenv import load_dotenv
 from graphiti_core import Graphiti
-from graphiti_core.nodes import EpisodeType
-from graphiti_core.search.search_config_recipes import NODE_HYBRID_SEARCH_RRF
 import episodes
+import entities
 
 load_dotenv()
 
@@ -62,17 +63,18 @@ def print_options():
 async def main():
     await graphiti.build_indices_and_constraints()
     # Initial episode
+    bulk = []
     for i, episode in enumerate(episodes.account_episodes):
-        await graphiti.add_episode(
-            name = f'Episode {i}',
-            episode_body=episode['content']
-            if isinstance(episode['content'], str)
-            else json.dumps(episode['content']),
-            source=episode['type'],
+        raw = RawEpisode(
+            name=f'Episode {i}',
+            content=episode['content'],
             source_description=episode['description'],
-            reference_time=datetime.now(timezone.utc)
+            source=episode['type'],
+            reference_time=datetime.today()
         )
-        print('Added episode')
+        bulk.append(raw)
+
+    await graphiti.add_episode_bulk(bulk)
 
     while True:
         print_options()
@@ -85,7 +87,6 @@ async def main():
             print("\nResults")
             for result in results:
                 print(f"Fact: {result.fact}")
-    pass
 
 if __name__ == "__main__":
     asyncio.run(main())

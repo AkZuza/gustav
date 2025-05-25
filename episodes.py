@@ -1,48 +1,24 @@
 from graphiti_core.nodes import EpisodeType
 
 account_episodes = [
+
     {
-        'content': {
-            'name': 'Akhil',
-            'dob': '14 August 2004',
-            'balance': '2000$',
-            'bank': 'Bank 1'
-        },
-        'type': EpisodeType.json,
+        'type': EpisodeType.text,
+        'content': 'User Ansh is added, age 19, email ansh@gmail.com, Create Account with balance 199$',
         'description': 'account creation'
     },
 
     {
-        'content': {
-            'name': 'Ananya',
-            'dob': '28 November 2005',
-            'balance': '20$',
-            'bank': 'Bank 2'
-        },
-        'type': EpisodeType.json,
-        'description': 'account creation'
+        'type': EpisodeType.text,
+        'content': 'Create User Akhil, age 20, email akhil@gmail.com',
+        'description': 'User creation',
     },
 
     {
-        'content': {
-            'name': 'Ansh',
-            'dob': '28 October 2005',
-            'balance': '2000$',
-            'bank': 'Bank 2'
-        },
-        'type': EpisodeType.json,
-        'description': 'account creation'
-    },
-
-    {
-        'content': {
-            'name': 'Asswin',
-            'dob': '28 October 2005',
-            'balance': '2000$',
-            'bank': 'Bank 1'
-        },
-        'type': EpisodeType.json,
-        'description': 'account creation'
+        'type': EpisodeType.text,
+        'content': 'Create Account for User Akhil with balance of 20000$',
+        'description': 'Account creation'
     }
+
 ]
 

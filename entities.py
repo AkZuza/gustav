@@ -4,7 +4,7 @@ class User(BaseModel):
     """User Model"""
     name: str | None = Field(..., description="The name of the user")
     email: str | None = Field(..., description="The email ")
-    age: Int | None = Field(..., description="The age of the user")
+    age: int | None = Field(..., description="The age of the user")
 
 class Account(BaseModel):
     """Account Model"""
@@ -16,7 +16,7 @@ class Account(BaseModel):
 
 class Transaction(BaseModel):
     """Transaction Model"""
-    from: str | None = Field(..., description="UUID of the account amount is being transferred from")
+    fro: str | None = Field(..., description="UUID of the account amount is being transferred from")
     to: str | None = Field(..., description="UUID of the account amount is being transaferred to")
     amount: float | None = Field(..., description="Amount transferred")
 
@@ -25,4 +25,4 @@ class Bank(BaseModel):
     """Bank Model"""
     name: str | None = Field(..., description="Bank name")
 
-    entities = { "User": User, "Account": Account, "Transaction": Transaction, "Bank": Bank}
+entities = { "User": User, "Account": Account, "Transaction": Transaction, "Bank": Bank}
