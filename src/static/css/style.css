@@ -232,9 +232,6 @@
   .flex-row {
     flex-direction: row;
   }
-  .content-around {
-    align-content: space-around;
-  }
   .content-center {
     align-content: center;
   }
@@ -297,9 +294,6 @@
   }
   .py-2 {
     padding-block: calc(var(--spacing) * 2);
-  }
-  .align-middle {
-    vertical-align: middle;
   }
   .text-lg {
     font-size: var(--text-lg);

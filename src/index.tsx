@@ -9,7 +9,7 @@ import UserMessage from "./views/UserMessage"
 import SystemMessage from "./views/SystemMessage"
 import OpenAI from "openai"
 import "./util/neo4j_functions"
-import {createAccountFunction, createUserFunction, handleFunction} from "./util/neo4j_functions"
+import {createAccountFunction, createBankFunction, createUserFunction, handleFunction} from "./util/neo4j_functions"
 import type { ChatCompletionTool } from "openai/resources.mjs"
 
 // Structure for chat texts
@@ -18,13 +18,14 @@ var responses: string[] = []
 
 // Initialize OpenAI stuff here
 const client = new OpenAI({
-	baseURL: "http://192.168.255.76:2345/v1",
+	baseURL: "http://192.168.209.117:1234/v1",
 	apiKey: "lm-studio"
 })
 
 const tools: ChatCompletionTool[] = [
 	createUserFunction as ChatCompletionTool, 
-	createAccountFunction as ChatCompletionTool
+	createAccountFunction as ChatCompletionTool,
+	createBankFunction as ChatCompletionTool
 ]
 
 const generateReponse = async (prompt: string) => {
@@ -41,7 +42,7 @@ const generateReponse = async (prompt: string) => {
 
 	let response = completion.choices[0]?.message.content ?? ""
 	console.log('Response from LLM\n' + response + '\n')
-	const tool_calls: any = completion.choices[0]!.message.tool_calls
+	const tool_calls: any = completion.choices[0]?.message.tool_calls ?? []
 	console.log(`Tools called:\n`)
 	console.log(tool_calls)
 

@@ -3,7 +3,7 @@ import type { User, Bank, Account, OpenedIn } from "./neo4j_entities"
 
 const driver = neo4j.driver(
 	"neo4j://localhost",
-	neo4j.auth.basic("neo4j", "password")
+	neo4j.auth.basic("neo4j", "byteme@2023")
 )
 
 try {
@@ -20,7 +20,7 @@ const createUser = async (name: string, email: string, age: number) => {
 
 	try {
 		const result = await session.executeWrite(async tx => {
-			const result = await tx.run("CREATE (p:User {name: $name, email: $email, age: $age}) RETURN p.name", {
+			const result = await tx.run("CREATE (p:User {name: $name, email: $email, age: $age, createdAt: datetime()}) RETURN p.name", {
 				name: name, email: email, age: age
 			})
 
@@ -61,24 +61,86 @@ const createUserFunction = {
 	}
 }
 
-const createAccount = async (name: string, balance: number) => {
+const createAccount = async (name: string, balance: number, bank: string) => {
 	const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 	const session = driver.session()
 	try {
 		await session.executeWrite(async tx => {
-			const result = await tx.run(`MATCH (u:User) WHERE u.name = "$name" 
-			CREATE (a:Account {account_id: $account_id, balance: $balance})<-[r:OPENED_BY]-(u)
-		    RETURN a.account_id`, {
+			let account_id = null, bankname = null, username = null
+			let result
+
+			// Find user and bank first
+			result = await tx.run(
+				`MATCH (u:User) WHERE u.name = $name RETURN u.name as user`,
+				{
 					name: name,
-					balance: balance,
-					account_id: randomInt(0, 10000)
 				}
 			)
 
 			if(result.records.length > 0) {
-				console.log(`Created Account ${result.records[0]}`)
+				username = result.records[0]?.get("user") ?? null
+			}
+
+			if (username == null) {
+				console.log(`User ${name} does not exist`)
+				//throw new Error("User does not exist")
+			}
+
+			// Find the bank
+			result = await tx.run(
+				`MATCH (u:Bank) WHERE u.name = $name RETURN u.name as bank `,
+				{
+					name: bank,
+				}
+			)
+
+			if(result.records.length > 0) {
+				bankname = result.records[0]?.get("bank") ?? null
+			}
+
+			if (bankname == null) {
+				console.log(`Bank ${bank} does not exit`)
+				//throw new Error("Bank does not exist")
+			}
+
+			result = await tx.run(
+				`MATCH (u:User) WHERE u.name = $name
+				 CREATE (a:Account {account_id: $account_id, balance: $balance, createdAt: datetime()})-[r:OPENED_BY]->(u)
+				 RETURN a.account_id as acc_id`,
+				{
+					name: name,
+					account_id: randomInt(0, 500),
+					balance: balance
+				}
+			)
+
+			if (result.records.length > 0) {
+				account_id = result.records[0]?.get('acc_id') ?? -1
+			}
+
+			if (account_id === -1) {
+				console.log(`Failed to open an account`)
+				throw new Error("Failed to open account for user")
+			} else console.log(`Created account ${account_id}`)
+
+			result = await tx.run(
+				`MATCH (b:Bank) WHERE b.name = $bank
+				 MATCH (a:Account) WHERE a.account_id = $account_id
+				 CREATE (a)-[r:OPENED_IN]->(b)
+				 RETURN a.account_id as acc_id`,
+				{
+					bank: bank,
+					account_id: account_id
+				}
+			)
+
+			if (result.records.length == 0) {
+				console.log(`Failed to open the account in the bank`)
+				throw new Error("Failed to open account in bank")
 			}
 		})
+	} catch(err) {
+		console.log(`createAccount Exception: ${err}`)
 	} finally {
 		session.close()
 	}
@@ -99,13 +161,71 @@ const createAccountFunction = {
 				"balance": {
 					"type": "number",
 					"description": "The initial account balance the user opens the account with"
+				},
+				"bank": {
+					"type": "string",
+					"description": "The bank to open the account in"
 				}
 			},
-			"required": ["name", "balance"],
+			"required": ["name", "balance", "bank"],
 			"additionalProperties": false
 		},
 		"strict": true
 	}
+}
+
+const createBank = async (name: string) => {
+	const session = driver.session()
+
+	try {
+		const bankName = await session.executeWrite(async tx => {
+			let bankName = ""
+			let result = await tx.run(
+				`CREATE (b:Bank {name: $name, createdAt: datetime()}) RETURN b.name as name`,
+				{
+					name: name
+				}
+			)
+
+			if (result.records.length > 0) {
+				bankName = result.records[0]?.get('name') ?? ""
+			}
+
+			return bankName
+		})
+
+		console.log(`Created bank: ${bankName}`)
+	} finally {
+		session.close()
+	}
+}
+
+const createBankFunction = {
+	"type": "function",
+	"function": {
+		"name": "createBank",
+		"description": "Create a bank",
+		"parameters": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "The name of the bank"
+				},
+			},
+			"required": ["name"],
+			"additionalProperties": false
+		},
+		"strict": true
+	}
+}
+
+const getTransactions = () => {
+	
+}
+
+const getUsers = () => {
+
 }
 
 const handleFunction = (tool_name: string, args: any) => {
@@ -115,7 +235,11 @@ const handleFunction = (tool_name: string, args: any) => {
 			break
 
 		case "createAccount":
-			createAccount(args.name, args.balance)
+			createAccount(args.name, args.balance, args.bank)
+			break
+
+		case "createBank":
+			createBank(args.name)
 			break
 	}
 }
@@ -123,7 +247,8 @@ const handleFunction = (tool_name: string, args: any) => {
 export {
 	handleFunction,
 	createUser, createUserFunction,
-	createAccount, createAccountFunction
+	createAccount, createAccountFunction,
+	createBank, createBankFunction
 }
 
 
