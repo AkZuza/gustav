@@ -18,7 +18,7 @@ var responses: string[] = []
 
 // Initialize OpenAI stuff here
 const client = new OpenAI({
-	baseURL: "http://192.168.255.76:2345/v1",
+	baseURL: "http://192.168.138.76:2345/v1",
 	apiKey: "lm-studio"
 })
 
