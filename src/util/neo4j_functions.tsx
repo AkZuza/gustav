@@ -221,11 +221,94 @@ const createBankFunction = {
 }
 
 const getTransactions = () => {
-	
+
 }
 
 const getUsers = () => {
 
+}
+
+const createTransactions = async (payer: string, reciever: string, amount: number) => {
+const session = driver.session()
+
+	try {
+		const bankName = await session.executeWrite(async tx => {
+			let payer_id, rec_id
+			let result = await tx.run(
+				`MATCH (u:User)<-[r:OPENED_BY]-(a:Account) WHERE u.name = $name RETURN a.account_id as acc_id`,
+				{
+					name: payer
+				} 
+			)
+
+			if (result.records.length > 0) {
+				payer_id = result.records[0]?.get('acc_id') ?? ""
+			}
+
+			result = await tx.run(
+				`MATCH (u:User)<-[r:OPENED_BY]-(a:Account) WHERE u.name = $name RETURN a.account_id as acc_id`,
+				{
+					name: reciever
+				}
+			)
+
+			if (result.records.length > 0) {
+				rec_id = result.records[0]?.get('acc_id') ?? ""
+			}
+
+
+			result = await tx.run(
+				`
+				MATCH (p:Account) WHERE p.account_id = $payer_id
+				MATCH (r:Account) WHERE r.account_id = $rec_id
+				CREATE (p)-[t:PAYED {amount: $amount, createdAt: datetime()}]->(r) 
+				RETURN t`,
+				{
+					amount: amount,
+					payer_id: payer_id,
+					rec_id: rec_id
+				}
+			)
+
+			if (result.records.length > 0) {
+				console.log("Transaction successful")
+			}
+
+			
+		})
+
+		console.log(`Created transaction: ${payer} -> ${reciever} {${amount}}`)
+	} finally {
+		session.close()
+	}
+}
+
+const createTransactionFunction = {
+	"type": "function",
+	"function": {
+		"name": "createTransaction",
+		"description": "Create a transaction between two users",
+		"parameters": {
+			"type": "object",
+			"properties": {
+				"payer": {
+					"type": "string",
+					"description": "The name of the payer"
+				},
+				"reciever": {
+					"type": "string",
+					"description": "The name of the reciever"
+				},
+				"amount": {
+					"type": "number",
+					"description": "The amount to be paid"
+				},
+			},
+			"required": ["payer", "reciever", "amount"],
+			"additionalProperties": false
+		},
+		"strict": true
+	}
 }
 
 const handleFunction = (tool_name: string, args: any) => {
@@ -241,6 +324,10 @@ const handleFunction = (tool_name: string, args: any) => {
 		case "createBank":
 			createBank(args.name)
 			break
+
+		case "createTransaction":
+			createTransactions(args.payer, args.reciever, args.amount)
+			break
 	}
 }
 
@@ -248,7 +335,8 @@ export {
 	handleFunction,
 	createUser, createUserFunction,
 	createAccount, createAccountFunction,
-	createBank, createBankFunction
+	createBank, createBankFunction,
+	createTransactions, createTransactionFunction
 }
 
 
