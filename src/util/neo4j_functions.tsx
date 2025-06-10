@@ -86,23 +86,6 @@ const createAccount = async (name: string, balance: number, bank: string) => {
 				//throw new Error("User does not exist")
 			}
 
-			// Find the bank
-			result = await tx.run(
-				`MATCH (u:Bank) WHERE u.name = $name RETURN u.name as bank `,
-				{
-					name: bank,
-				}
-			)
-
-			if(result.records.length > 0) {
-				bankname = result.records[0]?.get("bank") ?? null
-			}
-
-			if (bankname == null) {
-				console.log(`Bank ${bank} does not exit`)
-				//throw new Error("Bank does not exist")
-			}
-
 			result = await tx.run(
 				`MATCH (u:User) WHERE u.name = $name
 				 CREATE (a:Account {account_id: $account_id, balance: $balance, createdAt: datetime()})-[r:OPENED_BY]->(u)
@@ -123,21 +106,6 @@ const createAccount = async (name: string, balance: number, bank: string) => {
 				throw new Error("Failed to open account for user")
 			} else console.log(`Created account ${account_id}`)
 
-			result = await tx.run(
-				`MATCH (b:Bank) WHERE b.name = $bank
-				 MATCH (a:Account) WHERE a.account_id = $account_id
-				 CREATE (a)-[r:OPENED_IN]->(b)
-				 RETURN a.account_id as acc_id`,
-				{
-					bank: bank,
-					account_id: account_id
-				}
-			)
-
-			if (result.records.length == 0) {
-				console.log(`Failed to open the account in the bank`)
-				throw new Error("Failed to open account in bank")
-			}
 		})
 	} catch(err) {
 		console.log(`createAccount Exception: ${err}`)
@@ -256,17 +224,28 @@ const session = driver.session()
 				rec_id = result.records[0]?.get('acc_id') ?? ""
 			}
 
+			// current time
+			const d: Date = new Date();
+			const second = d.getSeconds();
+			const hour = d.getHours();
+			const minute = d.getMinutes();
+
+			const time = (hour * 36000) + (minute * 60) + (second)
+			const date = d.toLocaleDateString()
+
 
 			result = await tx.run(
 				`
 				MATCH (p:Account) WHERE p.account_id = $payer_id
 				MATCH (r:Account) WHERE r.account_id = $rec_id
-				CREATE (p)-[t:PAYED {amount: $amount, createdAt: datetime()}]->(r) 
+				CREATE (p)-[re:PAYER]->(t:Transaction {amount: $amount, payer_id: $payer_id, rec_id: $rec_id, date: $date}, time: $time)<-[rr:RECIPIENT]-(r) 
 				RETURN t`,
 				{
 					amount: amount,
 					payer_id: payer_id,
-					rec_id: rec_id
+					rec_id: rec_id,
+					time: time,
+					date: date
 				}
 			)
 

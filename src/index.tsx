@@ -42,21 +42,37 @@ const generateReponse = async (prompt: string) => {
 	})
 
 	let response = completion.choices[0]?.message.content ?? ""
-	console.log('Response from LLM\n' + response + '\n')
 	const tool_calls: any = completion.choices[0]?.message.tool_calls ?? []
-	console.log(`Tools called:\n`)
-	console.log(tool_calls)
+	let temp = tool_calls.length > 0 ? "" : null
 
 	for (let i = 0; i < tool_calls.length; ++i) {
 		const tool_call = tool_calls[i]
 		const args = JSON.parse(tool_call.function.arguments)
 		const functionName = tool_call.function.name
-		
-		console.log(`Function call: ${functionName}`)
-		console.log(args)
 		handleFunction(functionName, args)
-		response += `\ntool: ${functionName} args: (${args})`
+
+		temp += `tool call ${i} : ${functionName}\n`
+		temp += `args: ${tool_call.function.arguments}\n`
 	}
+
+	// if temp is not empty
+	// create a response from it using the llm and make it understandable
+	if(temp != null) {
+		temp += "\n\nGive an extremely brief description of what happened, no need to explain it like im 5 years old"
+		temp += "\nJust say the resulting changes that will happen with the function call"
+		temp += "\nFor example you can say: Created User for [Name here]"
+		const temp_completion = await client.chat.completions.create({
+			model: "llama-3.2-3b-instruct",
+			messages: [
+				{
+					"role": "user",
+					"content": temp
+				}
+			]
+		})
+		response = temp_completion.choices[0]?.message.content ?? ""
+	}
+
 	responses.push(response)
 }
 
